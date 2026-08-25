@@ -1,0 +1,14 @@
+[
+    {
+        "id": 1,
+        "question": "What is the primary function of a virtual environment in Python?"
+    },
+    {
+        "id": 2,
+        "question": "Explain how a Personal Access Token differs from a password on GitHub."
+    },
+    {
+        "id": 3,
+        "question": "What Python standard library module is used for regular expressions?"
+    }
+]

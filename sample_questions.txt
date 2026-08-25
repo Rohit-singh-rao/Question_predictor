@@ -1,0 +1,3 @@
+Q1: What is the primary function of a virtual environment in Python?
+Q2: Explain how a Personal Access Token differs from a password on GitHub.
+Q3: What Python standard library module is used for regular expressions?
