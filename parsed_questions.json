@@ -1,14 +1,20 @@
 [
     {
         "id": 1,
-        "question": "What is the primary function of a virtual environment in Python?"
+        "question": "What is the primary function of a virtual environment in Python?",
+        "topic": "Environments",
+        "importance": 5
     },
     {
         "id": 2,
-        "question": "Explain how a Personal Access Token differs from a password on GitHub."
+        "question": "Explain how a Personal Access Token differs from a password on GitHub.",
+        "topic": "Git",
+        "importance": 3
     },
     {
         "id": 3,
-        "question": "What Python standard library module is used for regular expressions?"
+        "question": "What Python standard library module is used for regular expressions?",
+        "topic": "Python Core",
+        "importance": 4
     }
 ]
