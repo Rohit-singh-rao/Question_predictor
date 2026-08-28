@@ -1,20 +1,86 @@
-import json
 import re
+import json
 
-# 1. Read file
-with open("sample_questions.txt", "r", encoding="utf-8") as file:
-    text = file.read()
+def run_parser(input_file="sample_questions.txt", output_file="parsed_questions.json"):
+    """Parses raw question text into structured JSON with default metadata."""
+    try:
+        with open(input_file, "r", encoding="utf-8") as file:
+            content = file.read()
+    except FileNotFoundError:
+        print(f"\n[!] Error: Source file '{input_file}' not found.")
+        return
 
-# 2. Extract questions
-pattern = r"Q\d+:\s*(.+)"
-questions = re.findall(pattern, text)
+    # Matches "1. Text", "1) Text", "1 Text", or "Q1: Text"
+    raw_matches = re.findall(r"Q(\d+):\s*(.*)", content)
+    
+    parsed_data = []
+    for item in raw_matches:
+        q_id = int(item[0])
+        q_text = item[1].strip()
+        
+        parsed_data.append({
+            "id": q_id,
+            "question": q_text,
+            "topic": "General",
+            "importance": 3,
+            "exam_frequency": 3,
+            "recency_score": 3
+        })
 
-# 3. Create structured_data
-structured_data = []
-for index, q in enumerate(questions):
-    item = {"id": index + 1, "question": q}
-    structured_data.append(item)
+    try:
+        with open(output_file, "w", encoding="utf-8") as file:
+            json.dump(parsed_data, file, indent=4)
+        print(f"\n[+] Success! Parsed {len(parsed_data)} questions into '{output_file}'.")
+    except IOError as e:
+        print(f"\n[!] Error saving JSON file: {e}")
 
-# 4. Save to JSON file
-with open("parsed_questions.json", "w", encoding="utf-8") as file:
-    json.dump(structured_data, file, indent=4)
+def update_metadata():
+    """Allows user to update metadata (topic, importance, frequency, recency) for a question."""
+    try:
+        with open("parsed_questions.json", "r", encoding="utf-8") as file:
+            questions = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("\n[!] Error loading database. Parse raw text first.")
+        return
+
+    if not questions:
+        print("\n[!] No questions found in database.")
+        return
+
+    print("\n--- AVAILABLE QUESTIONS ---")
+    for q in questions:
+        print(f"ID {q['id']}: {q['question']} [{q.get('topic', 'General')}]")
+
+    q_id_input = input("\nEnter Question ID to edit (or press Enter to cancel): ").strip()
+    if not q_id_input.isdigit():
+        print("Cancelled.")
+        return
+
+    q_id = int(q_id_input)
+    target_q = next((q for q in questions if q["id"] == q_id), None)
+
+    if not target_q:
+        print(f"[!] Question with ID {q_id} not found.")
+        return
+
+    print(f"\nEditing Question #{q_id}: '{target_q['question']}'")
+    
+    new_topic = input(f"Enter Topic [{target_q.get('topic', 'General')}]: ").strip()
+    if new_topic:
+        target_q["topic"] = new_topic
+
+    for key in ["importance", "exam_frequency", "recency_score"]:
+        current_val = target_q.get(key, 3)
+        val_input = input(f"Enter {key.replace('_', ' ').title()} (1-5) [{current_val}]: ").strip()
+        if val_input.isdigit() and 1 <= int(val_input) <= 5:
+            target_q[key] = int(val_input)
+
+    try:
+        with open("parsed_questions.json", "w", encoding="utf-8") as file:
+            json.dump(questions, file, indent=4)
+        print(f"\n[+] Success! Updated metadata for Question #{q_id}.")
+    except IOError as e:
+        print(f"\n[!] Error saving updates: {e}")
+
+if __name__ == "__main__":
+    run_parser()

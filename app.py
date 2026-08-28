@@ -1,5 +1,6 @@
-import sys
-import subprocess
+from main import run_parser, update_metadata
+from search import run_search
+from predict import run_predictor
 
 def show_menu():
     print("\n=================================")
@@ -8,27 +9,27 @@ def show_menu():
     print("1. Parse Raw Text (main.py)")
     print("2. Search Questions (search.py)")
     print("3. Generate Prediction Report (predict.py)")
-    print("4. Exit")
+    print("4. Edit Question Metadata (main.py)")
+    print("5. Exit")
 
 def main():
     while True:
         show_menu()
-        choice = input("\nSelect an option (1-4): ").strip()
+        choice = input("\nSelect an option (1-5): ").strip()
 
         if choice == "1":
-            print("\n[Running main.py...]")
-            subprocess.run([sys.executable, "main.py"])
+            run_parser()
         elif choice == "2":
-            print("\n[Running search.py...]")
-            subprocess.run([sys.executable, "search.py"])
+            run_search()
         elif choice == "3":
-            print("\n[Running predict.py...]")
-            subprocess.run([sys.executable, "predict.py"])
+            run_predictor()
         elif choice == "4":
+            update_metadata()
+        elif choice == "5":
             print("\nExiting Question Predictor. Goodbye!")
             break
         else:
-            print("\nInvalid selection. Please choose 1, 2, 3, or 4.")
+            print("\nInvalid selection. Please choose 1-5.")
 
 if __name__ == "__main__":
     main()
