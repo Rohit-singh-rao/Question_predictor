@@ -3,18 +3,24 @@
         "id": 1,
         "question": "What is the primary function of a virtual environment in Python?",
         "topic": "Environments",
-        "importance": 5
+        "importance": 5,
+        "exam_frequency": 4,
+        "recency_score": 5
     },
     {
         "id": 2,
         "question": "Explain how a Personal Access Token differs from a password on GitHub.",
         "topic": "Git",
-        "importance": 3
+        "importance": 3,
+        "exam_frequency": 2,
+        "recency_score": 4
     },
     {
         "id": 3,
         "question": "What Python standard library module is used for regular expressions?",
         "topic": "Python Core",
-        "importance": 4
+        "importance": 4,
+        "exam_frequency": 5,
+        "recency_score": 3
     }
 ]
