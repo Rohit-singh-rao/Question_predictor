@@ -1,17 +1,40 @@
 import re
 import json
 
-def run_parser(input_file="sample_questions.txt", output_file="parsed_questions.json"):
-    """Parses raw question text into structured JSON with default metadata."""
+import re
+import json
+from pypdf import PdfReader
+
+def extract_text_from_file(filepath):
+    """Reads raw text from either a .txt or .pdf file."""
+    if filepath.lower().endswith(".pdf"):
+        reader = PdfReader(filepath)
+        text = ""
+        for page in reader.pages:
+            extracted = page.extract_text()
+            if extracted:
+                text += extracted + "\n"
+        return text
+    else:
+        with open(filepath, "r", encoding="utf-8") as file:
+            return file.read()
+
+def run_parser(output_file="parsed_questions.json"):
+    """Parses raw question text from a user-specified .txt or .pdf file into structured JSON."""
+    user_input = input("\nEnter file path to parse [default: sample_questions.txt]: ").strip()
+    input_file = user_input if user_input else "sample_questions.txt"
+
     try:
-        with open(input_file, "r", encoding="utf-8") as file:
-            content = file.read()
+        content = extract_text_from_file(input_file)
     except FileNotFoundError:
         print(f"\n[!] Error: Source file '{input_file}' not found.")
         return
+    except Exception as e:
+        print(f"\n[!] Error reading file '{input_file}': {e}")
+        return
 
-    # Matches "1. Text", "1) Text", "1 Text", or "Q1: Text"
-    raw_matches = re.findall(r"Q(\d+):\s*(.*)", content)
+    # Matches questions formatted like Q1: Text or 1. Text
+    raw_matches = re.findall(r"(?:Q)?(\d+)[\.\)]?\s*(.+)", content)
     
     parsed_data = []
     for item in raw_matches:
@@ -30,7 +53,7 @@ def run_parser(input_file="sample_questions.txt", output_file="parsed_questions.
     try:
         with open(output_file, "w", encoding="utf-8") as file:
             json.dump(parsed_data, file, indent=4)
-        print(f"\n[+] Success! Parsed {len(parsed_data)} questions into '{output_file}'.")
+        print(f"\n[+] Success! Parsed {len(parsed_data)} questions from '{input_file}' into '{output_file}'.")
     except IOError as e:
         print(f"\n[!] Error saving JSON file: {e}")
 
