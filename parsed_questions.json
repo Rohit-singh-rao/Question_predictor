@@ -1,26 +1,42 @@
 [
     {
         "id": 1,
-        "question": "What is the primary function of a virtual environment in Python?",
-        "topic": "Environments",
-        "importance": 5,
-        "exam_frequency": 4,
-        "recency_score": 5
+        "question": "Q1: What is the primary function of a virtual environment in Python?",
+        "topic": "Python Virtual Environment Functionality",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
     },
     {
         "id": 2,
-        "question": "Explain how a Personal Access Token differs from a password on GitHub.",
-        "topic": "Git",
-        "importance": 3,
-        "exam_frequency": 2,
-        "recency_score": 4
+        "question": "Q2: Explain how a Personal Access Token differs from a password on GitHub.",
+        "topic": "GitHub Authentication Mechanics",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
     },
     {
         "id": 3,
-        "question": "What Python standard library module is used for regular expressions?",
-        "topic": "Python Core",
-        "importance": 4,
-        "exam_frequency": 5,
+        "question": "Q3: What Python standard library module is used for regular expressions?",
+        "topic": "Pattern Matching",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 4,
+        "question": "Q4: What is the primary function of a virtual environment in Python?",
+        "topic": "Python Virtual Environment Management",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 5,
+        "question": "Q5: What is the primary function of a virtual environment in Python?",
+        "topic": "Python Virtual Environment Management",
+        "exam_frequency": 1,
+        "importance": 1,
         "recency_score": 3
     }
 ]

@@ -1,12 +1,11 @@
+import os
 import re
 import json
-
-import re
-import json
+import ollama
 from pypdf import PdfReader
 
 def extract_text_from_file(filepath):
-    """Reads raw text from either a .txt or .pdf file."""
+    """Reads raw text from .txt or .pdf files."""
     if filepath.lower().endswith(".pdf"):
         reader = PdfReader(filepath)
         text = ""
@@ -19,13 +18,66 @@ def extract_text_from_file(filepath):
         with open(filepath, "r", encoding="utf-8") as file:
             return file.read()
 
+def split_into_questions(raw_text):
+    """Splits raw text into individual questions by question numbers (e.g., Q1, 1., Q2:)."""
+    # Pattern looks for lines starting with Q1, 1., 1), etc.
+    pattern = r"(?=(?:^|\n)\s*(?:Q)?\d+[\.\:\)]\s*)"
+    chunks = re.split(pattern, raw_text, flags=re.IGNORECASE)
+    
+    questions = []
+    for chunk in chunks:
+        cleaned = chunk.strip()
+        if cleaned:
+            # Clean up internal linebreaks inside the question body
+            cleaned = re.sub(r"\s+", " ", cleaned)
+            questions.append(cleaned)
+            
+    return questions
+
+def generate_ai_topic(question_text):
+    """Uses local Llama 3 model via Ollama to generate a clean, dynamic topic name."""
+    prompt = (
+        f"Analyze this exam question: '{question_text}'. "
+        "Invent a concise, highly relevant topic name for it (e.g., 'Database Normalization', 'Pointers in C'). "
+        "Return ONLY a valid JSON object with NO markdown formatting: "
+        '{"topic": "Generated Topic Name"}'
+    )
+
+    try:
+        response = ollama.chat(
+            model='llama3.2',
+            messages=[{'role': 'user', 'content': prompt}]
+        )
+
+        raw_text = response['message']['content'].strip()
+        clean_json = raw_text.removeprefix("```json").removesuffix("```").strip()
+        data = json.loads(clean_json)
+
+        return data.get("topic", "General")
+
+    except Exception as e:
+        print(f"  [!] Local AI Error ({e}). Defaulting to 'General'.")
+        return "General"
+
+def calculate_frequency(target_text, all_questions_text):
+    """Counts how many times a question or key phrase appears across all past papers."""
+    target_clean = re.sub(r'[^a-zA-Z0-9 ]', '', target_text.lower()).strip()
+    
+    count = 0
+    for q in all_questions_text:
+        q_clean = re.sub(r'[^a-zA-Z0-9 ]', '', q.lower()).strip()
+        if target_clean in q_clean or q_clean in target_clean:
+            count += 1
+            
+    return max(1, count)
+
 def run_parser(output_file="parsed_questions.json"):
-    """Parses raw question text from a user-specified .txt or .pdf file into structured JSON."""
+    """Parses questions, generates AI topics, and calculates true frequency count."""
     user_input = input("\nEnter file path to parse [default: sample_questions.txt]: ").strip()
     input_file = user_input if user_input else "sample_questions.txt"
 
     try:
-        content = extract_text_from_file(input_file)
+        raw_text = extract_text_from_file(input_file)
     except FileNotFoundError:
         print(f"\n[!] Error: Source file '{input_file}' not found.")
         return
@@ -33,32 +85,38 @@ def run_parser(output_file="parsed_questions.json"):
         print(f"\n[!] Error reading file '{input_file}': {e}")
         return
 
-    # Matches questions formatted like Q1: Text or 1. Text
-    raw_matches = re.findall(r"(?:Q)?(\d+)[\.\)]?\s*(.+)", content)
+    questions_list = split_into_questions(raw_text)
     
+    if not questions_list:
+        print(f"\n[!] Warning: No formatted questions found in '{input_file}'.")
+        return
+
+    print(f"\n[...] Processing {len(questions_list)} question(s) with AI topics & Frequency tracking...")
+
     parsed_data = []
-    for item in raw_matches:
-        q_id = int(item[0])
-        q_text = item[1].strip()
+
+    for idx, q_text in enumerate(questions_list, 1):
+        topic = generate_ai_topic(q_text)
+        freq_count = calculate_frequency(q_text, questions_list)
         
         parsed_data.append({
-            "id": q_id,
+            "id": idx,
             "question": q_text,
-            "topic": "General",
-            "importance": 3,
-            "exam_frequency": 3,
+            "topic": topic,
+            "exam_frequency": freq_count,
+            "importance": min(5, freq_count),
             "recency_score": 3
         })
 
     try:
         with open(output_file, "w", encoding="utf-8") as file:
             json.dump(parsed_data, file, indent=4)
-        print(f"\n[+] Success! Parsed {len(parsed_data)} questions from '{input_file}' into '{output_file}'.")
+        print(f"\n[+] Success! Parsed {len(parsed_data)} questions into '{output_file}'.")
     except IOError as e:
         print(f"\n[!] Error saving JSON file: {e}")
 
 def update_metadata():
-    """Allows user to update metadata (topic, importance, frequency, recency) for a question."""
+    """Allows user to update metadata for a question."""
     try:
         with open("parsed_questions.json", "r", encoding="utf-8") as file:
             questions = json.load(file)

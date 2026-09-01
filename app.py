@@ -1,39 +1,37 @@
 from main import run_parser, update_metadata
-from search import run_search
 from predict import run_predictor
-from analytics import run_analytics  # 1. Imported our new module
+from search import search_questions
+from analytics import run_analytics
 
-def show_menu():
-    print("\n=================================")
-    print("   QUESTION PREDICTOR ENGINE     ")
-    print("=================================")
-    print("1. Parse Raw Text (main.py)")
-    print("2. Search Questions (search.py)")
-    print("3. Generate Prediction Report (predict.py)")
-    print("4. Edit Question Metadata (main.py)")
-    print("5. View Analytics Dashboard (analytics.py)")  # 2. Added new menu item
-    print("6. Exit")
-
-def main():
+def main_menu():
     while True:
-        show_menu()
+        print("\n" + "="*33)
+        print("   QUESTION PREDICTOR ENGINE     ")
+        print("="*33)
+        print("1. Parse Raw Text / PDF (main.py)")
+        print("2. Search Questions (search.py)")
+        print("3. Generate Prediction Report (predict.py)")
+        print("4. Edit Question Metadata (main.py)")
+        print("5. View Analytics Dashboard (analytics.py)")
+        print("6. Exit")
+
         choice = input("\nSelect an option (1-6): ").strip()
 
         if choice == "1":
             run_parser()
         elif choice == "2":
-            run_search()
+            search_questions()
         elif choice == "3":
             run_predictor()
         elif choice == "4":
             update_metadata()
         elif choice == "5":
-            run_analytics()  # Executes our analytics module
+            run_analytics()
         elif choice == "6":
             print("\nExiting Question Predictor. Goodbye!")
             break
         else:
-            print("\nInvalid selection. Please choose 1-6.")
+            print("\n[!] Invalid choice. Please enter a number between 1 and 6.")
 
 if __name__ == "__main__":
-    main()
+    main_menu()

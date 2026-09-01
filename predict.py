@@ -1,65 +1,80 @@
+import re
 import json
 
-def calculate_priority_score(question):
-    """Calculates a weighted priority score out of 10.0 points."""
-    importance = question.get("importance", 1)
-    frequency = question.get("exam_frequency", 1)
-    recency = question.get("recency_score", 1)
+def load_data(filename="parsed_questions.json"):
+    try:
+        with open(filename, "r", encoding="utf-8") as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+def clean_question_text(text):
+    """Strips leading question numbers like Q1:, 1., or Q4: for true matching."""
+    return re.sub(r"^(?:Q)?\d+[\.\:\)]\s*", "", text, flags=re.IGNORECASE).strip()
+
+def calculate_score(imp, freq, recency=3):
+    """Calculates priority score based on frequency, importance, and recency."""
+    return round((imp * 0.4) + (freq * 0.4) + (recency * 0.2), 1)
+
+def run_predictor():
+    """Ranks and displays unique question predictions based on consolidated frequency."""
+    questions = load_data()
+    if not questions:
+        print("\n[!] No questions available to predict. Parse data first.")
+        return
+
+    filter_topic = input("\nEnter topic to predict (or press Enter for ALL topics): ").strip()
     
-    score = (importance * 1.0) + (frequency * 0.6) + (recency * 0.4)
-    return round(score, 2)
+    if filter_topic:
+        questions = [q for q in questions if filter_topic.lower() in q.get("topic", "").lower()]
 
-# 1. Load database
-with open("parsed_questions.json", "r", encoding="utf-8") as file:
-    question_db = json.load(file)
+    if not questions:
+        print(f"\n[!] No questions found for topic '{filter_topic}'.")
+        return
 
-# 2. Calculate priority scores
-for q in question_db:
-    q["priority_score"] = calculate_priority_score(q)
+    # Group duplicate questions by stripping question prefixes
+    unique_questions = {}
+    for q in questions:
+        core_text = clean_question_text(q["question"])
+        if core_text not in unique_questions:
+            unique_questions[core_text] = {
+                "question": core_text,
+                "topic": q.get("topic", "General"),
+                "count": 1,
+                "recency": q.get("recency_score", 3)
+            }
+        else:
+            unique_questions[core_text]["count"] += 1
 
-# 3. User input for topic filter
-target_topic = input("Enter topic to predict (or press Enter for ALL topics): ").strip()
+    # Calculate real frequency & score for ranked output
+    ranked = []
+    for q_data in unique_questions.values():
+        freq = q_data["count"]
+        imp = min(5, freq)  # Importance scales directly with frequency
+        score = calculate_score(imp, freq, q_data["recency"])
+        
+        ranked.append({
+            "question": q_data["question"],
+            "topic": q_data["topic"],
+            "importance": imp,
+            "frequency": freq,
+            "recency": q_data["recency"],
+            "score": score
+        })
 
-# 4. Filter by topic
-if target_topic:
-    matches = [q for q in question_db if target_topic.lower() in q["topic"].lower()]
-else:
-    matches = question_db
+    ranked.sort(key=lambda x: x["score"], reverse=True)
 
-# 5. Sort by calculated priority score
-ranked_questions = sorted(matches, key=lambda item: item["priority_score"], reverse=True)
+    print("\n" + "="*50)
+    print(f"      EXAM PREDICTION REPORT: '{filter_topic.upper() if filter_topic else 'ALL'}'")
+    print("="*50)
 
-# 6. Top-N filter
-if ranked_questions:
-    top_n_input = input(f"How many top predictions do you want to view? (1-{len(ranked_questions)}): ").strip()
-    top_n = int(top_n_input) if top_n_input.isdigit() else len(ranked_questions)
-    final_predictions = ranked_questions[:top_n]
-else:
-    final_predictions = []
+    top_n_input = input("\nHow many top predictions do you want to view? (1-5): ").strip()
+    limit = int(top_n_input) if top_n_input.isdigit() else 3
 
-# 7. Format and print report
-report_lines = []
-report_lines.append("==================================================")
-report_lines.append(f"      EXAM PREDICTION REPORT: '{target_topic or 'ALL'}'")
-report_lines.append("==================================================\n")
+    for idx, q in enumerate(ranked[:limit], 1):
+        print(f"\n#{idx} [Score: {q['score']}/10.0] | Topic: {q['topic']}")
+        print(f"   Question: {q['question']}")
+        print(f"   Breakdown: Imp={q['importance']} | Freq={q['frequency']} | Recency={q['recency']}")
 
-if not final_predictions:
-    report_lines.append("No matching questions found.")
-else:
-    for rank, q in enumerate(final_predictions, start=1):
-        report_lines.append(f"#{rank} [Score: {q['priority_score']}/10.0] | Topic: {q['topic']}")
-        report_lines.append(f"   Question: {q['question']}")
-        report_lines.append(f"   Breakdown: Imp={q['importance']} | Freq={q['exam_frequency']} | Recency={q['recency_score']}\n")
-
-# Display in terminal
-report_text = "\n".join(report_lines)
-print(f"\n{report_text}")
-
-# 8. Export Option
-if final_predictions:
-    save_choice = input("Do you want to save this report to a file? (y/n): ").strip().lower()
-    if save_choice == 'y':
-        file_name = "predicted_exam_prep.txt"
-        with open(file_name, "w", encoding="utf-8") as file:
-            file.write(report_text)
-        print(f"Report saved successfully to '{file_name}'!")
+if __name__ == "__main__":
+    run_predictor()

@@ -1,18 +1,55 @@
+import re
 import json
 
-# 1. Load the question database
-with open("parsed_questions.json", "r", encoding="utf-8") as file:
-    question_db = json.load(file)
+def clean_question_text(text):
+    """Strips leading question numbers like Q1:, 1., or Q4: to allow true string matching."""
+    return re.sub(r"^(?:Q)?\d+[\.\:\)]\s*", "", text, flags=re.IGNORECASE).strip()
 
-# 2. Get search keyword from the user
-search_term = input("Enter a keyword to search: ").lower()
+def search_questions():
+    """Searches questions by keyword/topic with clean deduplication."""
+    try:
+        with open("parsed_questions.json", "r", encoding="utf-8") as file:
+            questions = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("\n[!] Error: Unable to load database. Parse raw text first.")
+        return
 
-# 3. Filter and display matching questions
-matches = []
-for item in question_db:
-    if search_term in item["question"].lower():
-        matches.append(item)
+    if not questions:
+        print("\n[!] No questions found in database.")
+        return
 
-print(f"\nFound {len(matches)} matching question(s):")
-for q in matches:
-    print(f"- [ID {q['id']}] {q['question']}")
+    keyword = input("\nEnter keyword or topic to search for: ").strip().lower()
+    if not keyword:
+        print("Search cancelled.")
+        return
+
+    matches = [
+        q for q in questions 
+        if keyword in q.get("question", "").lower() or keyword in q.get("topic", "").lower()
+    ]
+
+    if not matches:
+        print(f"\n[!] No matching questions found for '{keyword}'.")
+        return
+
+    # Deduplicate by core question body
+    unique_matches = {}
+    for q in matches:
+        core_text = clean_question_text(q["question"])
+        if core_text not in unique_matches:
+            unique_matches[core_text] = q
+        else:
+            existing = unique_matches[core_text]
+            existing["exam_frequency"] = max(existing.get("exam_frequency", 1), q.get("exam_frequency", 1))
+
+    print("\n" + "="*50)
+    print(f"      SEARCH RESULTS FOR: '{keyword.upper()}'")
+    print("="*50)
+
+    for idx, (core_text, q) in enumerate(unique_matches.items(), 1):
+        print(f"\n#{idx} | Topic: {q.get('topic', 'General')}")
+        print(f"   Question: {core_text}")
+        print(f"   Frequency across papers: {q.get('exam_frequency', 1)}")
+
+if __name__ == "__main__":
+    search_questions()

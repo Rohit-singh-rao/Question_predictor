@@ -1,0 +1,15 @@
+==================================================
+      EXAM PREDICTION REPORT: 'ALL'
+==================================================
+
+#1 [Score: 7.6/10.0] | Topic: environment
+   Question: What is the primary function of a virtual environment in Python?
+   Breakdown: Imp=5 | Freq=3 | Recency=2
+
+#2 [Score: 6.0/10.0] | Topic: General
+   Question: Explain how a Personal Access Token differs from a password on GitHub.
+   Breakdown: Imp=3 | Freq=3 | Recency=3
+
+#3 [Score: 6.0/10.0] | Topic: General
+   Question: What Python standard library module is used for regular expressions?
+   Breakdown: Imp=3 | Freq=3 | Recency=3
