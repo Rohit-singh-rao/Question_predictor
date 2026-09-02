@@ -9,8 +9,8 @@ def load_data(filename="parsed_questions.json"):
         return []
 
 def clean_question_text(text):
-    """Strips leading question numbers like Q1:, 1., or Q4: for true matching."""
-    return re.sub(r"^(?:Q)?\d+[\.\:\)]\s*", "", text, flags=re.IGNORECASE).strip()
+    """Strips leading question prefixes like Q1:, A1, Q A1, or C2 for deduplication."""
+    return re.sub(r"^(?:Q\s*)?[A-C]?\d+[\.\:\)]?\s*", "", text, flags=re.IGNORECASE).strip()
 
 def calculate_score(imp, freq, recency=3):
     """Calculates priority score based on frequency, importance, and recency."""
@@ -26,19 +26,21 @@ def run_predictor():
     filter_topic = input("\nEnter topic to predict (or press Enter for ALL topics): ").strip()
     
     if filter_topic:
-        questions = [q for q in questions if filter_topic.lower() in q.get("topic", "").lower()]
+        filtered_questions = [q for q in questions if filter_topic.lower() in q.get("topic", "").lower()]
+    else:
+        filtered_questions = questions
 
-    if not questions:
+    if not filtered_questions:
         print(f"\n[!] No questions found for topic '{filter_topic}'.")
         return
 
-    # Group duplicate questions by stripping question prefixes
+    # Group duplicate questions by stripping question prefixes while retaining full text for display
     unique_questions = {}
-    for q in questions:
+    for q in filtered_questions:
         core_text = clean_question_text(q["question"])
         if core_text not in unique_questions:
             unique_questions[core_text] = {
-                "question": core_text,
+                "display_question": q["question"],
                 "topic": q.get("topic", "General"),
                 "count": 1,
                 "recency": q.get("recency_score", 3)
@@ -54,7 +56,7 @@ def run_predictor():
         score = calculate_score(imp, freq, q_data["recency"])
         
         ranked.append({
-            "question": q_data["question"],
+            "question": q_data["display_question"],
             "topic": q_data["topic"],
             "importance": imp,
             "frequency": freq,
@@ -64,12 +66,17 @@ def run_predictor():
 
     ranked.sort(key=lambda x: x["score"], reverse=True)
 
+    total_avail = len(ranked)
     print("\n" + "="*50)
     print(f"      EXAM PREDICTION REPORT: '{filter_topic.upper() if filter_topic else 'ALL'}'")
     print("="*50)
 
-    top_n_input = input("\nHow many top predictions do you want to view? (1-5): ").strip()
-    limit = int(top_n_input) if top_n_input.isdigit() else 3
+    top_n_input = input(f"\nHow many top predictions do you want to view? (1-{total_avail}) [default: ALL ({total_avail})]: ").strip()
+
+    if top_n_input.isdigit() and int(top_n_input) > 0:
+        limit = min(int(top_n_input), total_avail)
+    else:
+        limit = total_avail  # Shows ALL questions if Enter is pressed
 
     for idx, q in enumerate(ranked[:limit], 1):
         print(f"\n#{idx} [Score: {q['score']}/10.0] | Topic: {q['topic']}")

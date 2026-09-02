@@ -1,21 +1,27 @@
+import sys
 from main import run_parser, update_metadata
-from predict import run_predictor
 from search import search_questions
+from predict import run_predictor
 from analytics import run_analytics
+from export import export_prediction_report
 
-def main_menu():
+def display_menu():
+    print("\n" + "="*35)
+    print("   QUESTION PREDICTOR CLI ENGINE   ")
+    print("="*35)
+    print("1. Parse Raw Text / PDF File")
+    print("2. Search Questions by Keyword/Topic")
+    print("3. Generate Prediction Report")
+    print("4. Edit Question Metadata")
+    print("5. View Analytics Dashboard")
+    print("6. Export Prediction Report (.txt / .md)")
+    print("7. Exit")
+    print("="*35)
+
+def main():
     while True:
-        print("\n" + "="*33)
-        print("   QUESTION PREDICTOR ENGINE     ")
-        print("="*33)
-        print("1. Parse Raw Text / PDF (main.py)")
-        print("2. Search Questions (search.py)")
-        print("3. Generate Prediction Report (predict.py)")
-        print("4. Edit Question Metadata (main.py)")
-        print("5. View Analytics Dashboard (analytics.py)")
-        print("6. Exit")
-
-        choice = input("\nSelect an option (1-6): ").strip()
+        display_menu()
+        choice = input("\nSelect an option (1-7): ").strip()
 
         if choice == "1":
             run_parser()
@@ -28,10 +34,12 @@ def main_menu():
         elif choice == "5":
             run_analytics()
         elif choice == "6":
+            export_prediction_report()
+        elif choice == "7":
             print("\nExiting Question Predictor. Goodbye!")
-            break
+            sys.exit(0)
         else:
-            print("\n[!] Invalid choice. Please enter a number between 1 and 6.")
+            print("\n[!] Invalid selection. Please enter a number between 1 and 7.")
 
 if __name__ == "__main__":
-    main_menu()
+    main()
