@@ -18,7 +18,7 @@
     {
         "id": 3,
         "question": "Q A3 \nWrite an assembly language program for a single-accumulator organization to evaluate  \nZ = (A+B) * (C + D).\n   LOAD A\n   ADD B\n   STORE T\n   LOAD C\n   ADD D\n   MUL T\n   STORE Z [2]\n CO2",
-        "topic": "Assembly Language Programming",
+        "topic": "Computer Architecture",
         "exam_frequency": 1,
         "importance": 1,
         "recency_score": 3
@@ -26,7 +26,7 @@
     {
         "id": 4,
         "question": "Q A4 \nWhat is the key advantage of associative mapping over direct mapping? \nThe key advantage of associative mapping is that any block of main memory can be placed in \nany cache line , which significantly reduces cache conflicts and miss rate  compared to direct \nmapping. [2]\n CO3",
-        "topic": "Cache Organization",
+        "topic": "Cache Organization and Management",
         "exam_frequency": 1,
         "importance": 1,
         "recency_score": 3
@@ -34,9 +34,9 @@
     {
         "id": 5,
         "question": "Q A5 Write the expression for gate delay in n-bit array multiplier. \n6(n-1)-1 [2]\n CO4",
-        "topic": "Computer Architecture",
-        "exam_frequency": 1,
-        "importance": 1,
+        "topic": "Digital Circuit Design",
+        "exam_frequency": 2,
+        "importance": 2,
         "recency_score": 3
     },
     {
@@ -58,7 +58,7 @@
     {
         "id": 8,
         "question": "Q B3 \nSuppose multiple devices capable of generating interrupts are connected to a CPU. Describe two \npossible methods the CPU can use to identify the interrupting device and obtain the starting address \nof the corresponding Interrupt Service Routine (ISR). \n1. Vectored Interrupts\n   \u2022 The interrupting device supplies an interrupt vector number.\n   \u2022 CPU uses this vector to directly obtain ISR address from a table. [6]\n CO3\n   \u2022 Fast and efficient, commonly used in modern systems. \n \n2. Polling (Non-vectored Interrupts)\n   \u2022 CPU checks devices one by one to identify the interrupt source.\n   \u2022 ISR starting address is obtained after identifying the device.\n   \u2022 Simple but slow method.",
-        "topic": "Computer Architecture",
+        "topic": "Computer System Performance",
         "exam_frequency": 1,
         "importance": 1,
         "recency_score": 3
@@ -66,7 +66,7 @@
     {
         "id": 9,
         "question": "Q B4 \nConsider a 4-way set associative cache of size 32 KB with a block size of 128 bytes. If the main \nmemory size is 512 KB, determine number of bits in the tag and size of the tag directory. \nGiven: \nCache size = 32 KB \nBlock size = 128 bytes \nCache type = 4-way set associative \nMain memory size = 512 KB\n\n   Step 1: Number of cache blocks \nCache size = 32 KB = 32 \u00d7 1024 = 32768 bytes \nNumber of blocks \n= 32768 / 128 \n= 256 blocks\n\n   Step 2: Number of sets \n4-way set associative cache \nNumber of sets \n= 256 / 4 \n= 64 sets \nIndex bits \n= log\u208264 \n= 6 bits\n\n   Step 3: Block offset bits \nBlock size = 128 bytes \nOffset bits \n= log\u2082128 \n= 7 bits\n\n   Step 4: Main memory address bits \nMain memory size = 512 KB \n= 512 \u00d7 1024 bytes \n= 2\u00b9\u2079 bytes \nMain memory address bits \n= 19 bits [6]\n CO3\n\n   Step 5: Tag bits \nTag bits \n= Total address bits \u2212 (Index bits + Offset bits) \n= 19 \u2212 (6 + 7) \n= 6 bits\n\n   Step 6: Size of tag directory \nTotal cache lines = 256 \nTag directory size \n= 256 \u00d7 6 \n= 1536 bits \n \nFinal Answer: \nNumber of tag bits = 6 bits \nSize of tag directory = 1536 bits",
-        "topic": "Computer Architecture",
+        "topic": "Cache Organization and Management",
         "exam_frequency": 1,
         "importance": 1,
         "recency_score": 3
@@ -74,7 +74,7 @@
     {
         "id": 10,
         "question": "Q B5 \nApply the bit-pair recoding algorithm to multiply the 6-bit 2's complement numbers A = 11 1111 \n(multiplicand) and B = 101010 (multiplier). [6]\n CO4",
-        "topic": "Assembly Language Programming",
+        "topic": "Computer Architecture",
         "exam_frequency": 1,
         "importance": 1,
         "recency_score": 3
@@ -82,7 +82,7 @@
     {
         "id": 11,
         "question": "Q C1 \nConsider a byte-addressable machine with a 32-bit word size. An array of n 32-bit integers is stored \nin consecutive memory locations starting at address ARR, and the value of n is stored as a 32 -bit \ninteger at memory location N. Write an assembly language program to find the maximum element \nof the array and store the result in memory location MAX, without using any additional array or \ntemporary storage other than registers.\n   LOAD    R1, N          ; R1 \u2190 n (number of elements)\n   LOAD    R2, ARR        ; R2 \u2190 first array element (max = ARR[0])\n   ADD     R3, ARR, #4    ; R3 \u2190 address of next element (ARR + 4) \n \nLOOP:\n   SUB     R1, R1, #1     ; decrement count\n   BEQ     DONE           ; if all elements checked, exit loop\n   LOAD    R0, 0(R3)      ; R0 \u2190 current array element\n   CMP     R0, R2         ; compare current element with max\n   BLE     SKIP           ; if R0 \u2264 R2, skip update\n   MOVE    R2, R0         ; update max value \n \nSKIP:\n   ADD     R3, R3, #4     ; move to next array element\n   BR      LOOP           ; repeat loop \n \nDONE:\n   STORE   R2, MAX        ; store maximum value in MAX\n   HALT\n   Explanation (for answer writing)\n   \u2022 Register R2 holds the current maximum value.\n   \u2022 Register R3 points to the next array element.\n   \u2022 Register R1 stores the remaining number of elements.\n   \u2022 The program scans the array once, compares each element with the current maximum, and \nupdates it if required.\n   \u2022 No additional memory locations or arrays are used. [10]\n CO2",
-        "topic": "Assembly Language Programming",
+        "topic": "Computer Architecture",
         "exam_frequency": 1,
         "importance": 1,
         "recency_score": 3
@@ -90,7 +90,7 @@
     {
         "id": 12,
         "question": "C2 \nA processor uses a hardwired control unit. It supports four control signals \ud835\udc460, \ud835\udc461, \ud835\udc462, \ud835\udc463and an \ninstruction set of up to 256 instructions. Each instruction is executed using a sequence of up to 8 \ncontrol steps generated by a timing unit. \nConsider three sample instructions  \ud835\udc3c1, \ud835\udc3c2and \ud835\udc3c3. Each of these instructions requires four \nmicrooperations at time steps \ud835\udc471, \ud835\udc472, \ud835\udc473and \ud835\udc474. The control signals required at each time step for the \nexecution of these instructions are given in the table below: \nTime Step I1 I2 I3 \nT1 S0 S0 S0 \nT2 S2, S3 S2 S1, S2 [10]\n CO5 \nT3 S1 S3 S1, S3 \nT4 S0 S2, S3 S0, S2\n   (a) Using the above table, derive the Boolean logic expressions required to generate control signals \nS0 and S1 in terms of instruction decoder outputs and timing signals. Also, draw the corresponding \nhardwired control logic circuit.\n   (b) Assuming the processor supports up to 256 instructions and that control sequences may last up \nto 8-time steps, determine: \n1. The required size of the instruction decoder \n2. The required size of the control-step counter \n3. The required size of the step decoder \nJustify your answers clearly.\n   (a) Boolean expressions for S\u2080 and S\u2081 \nFrom the given table: \nControl Signal S\u2080\n   \u2022 I\u2081 at T\u2081 and T\u2084\n   \u2022 I\u2082 at T\u2081\n   \u2022 I\u2083 at T\u2081 and T\u2084 \nSo, \nS0 = I1\u00b7T1 + I1\u00b7T4 + I2\u00b7T1 + I3\u00b7T1 + I3\u00b7T4 \nOr factorized form: \nS0 = T1\u00b7(I1 + I2 + I3) + T4\u00b7(I1 + I3) \nControl Signal S\u2081\n   \u2022 I\u2083 at T\u2082\n   \u2022 I\u2081 at T\u2083\n   \u2022 I\u2083 at T\u2083 \nSo, \nS1 = I3\u00b7T2 + I1\u00b7T3 + I3\u00b7T3 \nOr factorized form: \nS1 = I3\u00b7T2 + T3\u00b7(I1 + I3)\n   (b) Instruction decoder: 8-to-256 \n \nControl-step counter: 3-bit \n \nStep decoder: 3-to-8",
-        "topic": "Computer Architecture",
+        "topic": "Computer System Performance",
         "exam_frequency": 1,
         "importance": 1,
         "recency_score": 3
@@ -106,6 +106,174 @@
     {
         "id": 14,
         "question": "Q D2 \nConsider a 4-stage pipeline processor with stages S1, S2, S3, and S4. The number of cycles required \nby instructions I1, I2, I3, and I4 in each stage is given below: \nInstruction S1 S2 S3 S4 \nI1 2 1 1 1 \nI2 1 3 2 2 \nI3 2 1 1 3 \nI4 1 2 2 2 \nAssume the following loop executes: \nfor (i = 1 to 2) { \n    I1; I2; I3; I4; \n} \nDetermine the total number of cycles required to execute the above loop on this pipeline processor, \nconsidering possible stage conflicts and pipeline stalls. [10]\n CO5",
+        "topic": "Computer Architecture",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 15,
+        "question": "Q A1 \nWhat are the various factors that affect the performance of a computer system? \nHardware Design \nInstruction Set Architecture (ISA) \nCompiler [2]\n CO1",
+        "topic": "Computer System Performance",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 16,
+        "question": "Q A2 Why does Instruction Set Architecture (ISA) require various addressing modes? \nTo support various programming constructs. [2]\n CO2",
+        "topic": "Computer System Performance",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 17,
+        "question": "Q A3 \nDifferentiate between I/O mapped and memory mapped device interface. \nAspect                I/O-Mapped Interface Memory-Mapped Interface \nAddressing Devices have a separate I/O address space, \ndistinct from the memory address space. \nDevices share the same address \nspace as the system memory. \nInstruction \nSet \nAccess requires special I/O -specific \ninstructions like IN and OUT (common in \nassembly language). \nAccess is done using standard memory \ninstructions like MOV or\n   LOAD/STORE. \nAddress \nSpace Size \nLimited by the size of the I/O address bus \n(e.g., 8-bit or 16-bit for older systems). \nLimited by the size of the memory \naddress space, which is typically much \nlarger. [2]\n CO3",
+        "topic": "Computer Architecture",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 18,
+        "question": "Q A4 \nWhat is the key advantage of set-associative mapping over direct mapping? \nThe key advantage of set-associative mapping over direct mapping is that it reduces conflict misses \nby allowing a memory block to map to multiple cache lines within a set, improving cache utilization \nand performance. [2]\n CO3",
+        "topic": "Cache Organization and Management",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 19,
+        "question": "Q B1 \nA CPU has two types of instructions: Type A having 60% frequency of occurrence with a CPI of \n1, and Type B having 40% frequency of occurrence with a CPI of 3. Calculate the effective CPI \nand execution time for 1 million instructions on a processor with a clock speed of 2 GHz. [6]\n CO1 \n\n \n \n \n3 marks for effective CPI and 3 marks for Execution time.",
+        "topic": "Computer System Performance",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 20,
+        "question": "Q B2 \nWhy didn't processor manufacturers increase clock speeds instead of making them multicore? \nDescribe various processor designs according to Flynn\u2019s Classification. \n \n \n3 marks [6]\n CO1 \n\n \n3 marks",
+        "topic": "Computer Architecture",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 21,
+        "question": "Q B3 \nWrite an assembly language sequence for the following \u2018C construct\u2019 given below.  \n                                     if  ((x > y) && (x > z)) { \n                                                   count ++;\n   CMP y, x \nBranch < 0 Label\n   CMP z, x \nBranch < 0 Label\n   ADD #1, R8 \nLabel: \n2 marks if\n   CMP instruction is used, 4 marks if both conditions are checked. [6]\n CO2",
+        "topic": "Computer Architecture",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 22,
+        "question": "Q B4 \nWhat are the two modes of DMA data transfer, and how do they differ in operation? [6]\n CO3",
+        "topic": "Computer System Performance",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 23,
+        "question": "Q B5 \nA system features a 32 KB cache with each block being 64 bytes. The main memory size is 1 \nMB. Determine the following:\n   (i) The total number of cache lines. \n(ii) The total number of blocks in main memory. \n(iii) The specific cache line to which the block at the memory address AA3F5 (in \nhexadecimal) maps. [6]\n CO3 \n\nTag offset=5bit \nLine offset=9bit \nBlock Offset=6bit \nFinal Answers:\n   (i) 512 \n(ii) 16,384 \n(iii) 143 \n{2+2+2}",
+        "topic": "Cache Organization and Management",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 24,
+        "question": "Q C1 \nStarting from memory location LIST, 100 alphabets are stored (Some in lowercase and some are in \nuppercase). Consider the following assembly code to convert the lowercase alphabets to uppercase \nand uppercase alphabets will remain intact.   \n                          \n                         MOV #LIST, R0                           \n                         MOV #100, R1  \nLOOP\n   CMP (R0), #97                           \n                         BRANCH > 0 NEXT\n   SUB #32, (R0)                    \nNEXT              INC R0                                       \n                         DEC R1                           \n                         BRANCH > 0 LOOP   \nThe above code is executed on a processor having a clock rate of 1 GHz. The processor can execute \nan instruction that access memory for reading or writing data with an average of 5 steps, and other \ninstructions that do not require operand access from or to main memory can execute with an average \nof 3 steps (each step completes in one clock cycle).   \nDetermine how long the above assembly code will take to execute, given that 50 of the alphabets \nare lowercase and 50 are uppercase. \n                                                                         N \u00d7 S  \n                 MOV #LIST, R0                             1 \u00d7 3  \n                 MOV #100, R1                               1 \u00d7 3  \nLOOP\n   CMP (R0), #97                               100 \u00d7 5  \n                 BRANCH > 0 NEXT                      100 \u00d7 3\n   SUB #32, (R0)                                 50 \u00d7 5  \nNEXT      INC R0                                             100 \u00d7 3 \n                 DEC R1                                           100 \u00d7 3  \n                 BRANCH > 0 LOOP                      100 \u00d7 3 \n \nT = N\u00d7S / R = 1956 * 1 ns  \nT = 1.956 microseconds \n2 marks for N*S attempt \n+3 marks for correct N*S [10]\n CO2 \n+2 marks for expression",
+        "topic": "Computer Architecture",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 25,
+        "question": "Q C2 \nDesign a hardwired control unit for a processor that supports up to 128 instructions in its Instruction \nSet Architecture (ISA), with control sequences spanning a maximum of 7 timesteps.  \n \n \n \n[4 marks] \nSpecify the sizes of the instruction decoder, control step counter, and step decoder used in the \ndesign.  \n \nInstruction Decoder size is 7-to-128-line decoder \nControl step counter is a 3-bit counter \nThe control step decoder size is 3-to-8-line decoder \n[2 marks] \nAdditionally, write the control sequences\n   ADD R1, R2 , R3; Move R1, R2  and BRANCH LABEL \nconsidering three bus processor datapath. \n \n \n[2 marks for first three common steps] [10]\n CO5 \n\nFor\n   ADD R1, R2, R3 \nT4: R1outA, R2outB, Select A,\n   ADD, R3in, End \nFor Move R1, R2 \nT4: R1outB, R=B, R2in, End \nFor Branch Label \nT4: Offset field of IRout, PCout, Select A,\n   ADD, PCin, End \n[2 marks]",
+        "topic": "Computer Architecture",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 26,
+        "question": "Q D1 \nApply the bit-pair recoding algorithm to multiply the 8-bit 2's complement numbers A = 11010111 \n(multiplicand) and B = 10101010 (multiplier). Additionally, calculate the gate delays required to \ncompute the product if the summands are added using a 16 -bit Carry Look-Ahead (CLA) adder \nconstructed from cascading 4-bit CLA adders. \n \nFor 16-bit Carry Look -Ahead (CLA) adder constructed from cascading 4 -bit CLA adders , gate \ndelay for C16 and S15 are 9 and 10 respectively. \nHere, 4 summands are there so three additions require a total of 30 gate delays. \nCorrect Bit pair recoding: 2 marks \nCorrect Summands: 2 marks \nCorrect answer: 2 marks \nCorrect GD for 16-bit adder: 2 marks \n4 summands are there so three additions require a total of 30 gate delays: 2 marks [10]\n CO4",
+        "topic": "Computer Architecture",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 27,
+        "question": "QD2 A pipelined processor consists of five stages: Instruction Fetch (IF), Instruction Decode \n(ID), Execute (EX), Memory Access (MEM), and Write Back (WB), with each stage taking 2 \nns. There is an additional overhead of 0.5 ns per stage due to control logic. Given the following \nconditions: \n1. Ideal Case: Calculate the total time required to execute 100 instructions without any \nstalls. [3 marks] \n2. With Hazards: Assume 10% of the instructions encounter a 2 -cycle stall due to data \nhazards. Determine the new execution time. [3 marks] \n3. Speedup: Compare the execution time of the pipelined processor (with and without \nhazards) to that of a non -pipelined processor, which executes instructions sequentially \nat 10 ns per instruction. [2 + 2 marks]",
+        "topic": "Computer Architecture",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 28,
+        "question": "Q A1 \nWrite the steps needed to execute the machine instruction Load LOCA, R0  in terms of \ntransfers between the functional components of computer system (Memory and \nProcessor) and some simple control commands. Assume that the instruction itself is \nstored in the memory at location INSTR and that this address is initially in register PC.\n   \u2022 Transfer the contents of register PC to register MAR\n   \u2022 Issue a Read command to memory, and then wait until it has transferred the requested \nword into register MDR\n   \u2022 Transfer the instruction from MDR into IR and decode it\n   \u2022 Transfer the address LOCA from IR to MAR\n   \u2022 Issue a Read command and wait until MDR is loaded\n   \u2022 Transfer contents of MDR to R0\n   \u2022 Transfer contents of PC to ALU\n   \u2022 Add 1 to operand in ALU and transfer incremented address to PC [2]\n CO1",
+        "topic": "Computer System Performance",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 29,
+        "question": "Q A2 \nWhat are the main pros and cons of associative and direct mapping, respectively? \nAssociative mapping  \nPros- efficient cache utilization \nCons - costlier to implement (all cache lines or tags need to be checked for each \nmemory reference)  \nDirect mapping \nPros \u2013 Simple to implement (only one cache line or tag need to be checked for each \nmemory reference) [2]\n CO3 \n\n \nCons \u2013 not flexible (efficient cache utilization is not there)",
+        "topic": "Computer System Performance",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 30,
+        "question": "Q A3 \nWhat is the main advantage of Sequential multiplier over Array multiplier? \n\uf0b7 Less gates are required \n\uf0b7 Can be used for signed multiplication [2]\n CO4",
+        "topic": "Computer Architecture",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 31,
+        "question": "Q B1 \nSuppose Machine A executes a program with an average CPI (Cycles Per Instruction) of \n2.3. Machine B, which uses the same instruction set but has a more efficient compiler, \nexecutes the same program with 20% fewer instructions and an average CPI of 1.7, \noperating at a clock rate of 1.2 GHz. What should be the clock rate of Machine A so that \nit achieves the same performance as Machine B. [4]\n CO1",
+        "topic": "Computer Architecture",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 32,
+        "question": "Q B2 \nConsider a hypothetical processor which has the following addressing modes as given \nbelow along with their frequency of occurrence. \n   Addressing Mode     Frequency (%) \nRegister                  20 \nImmediate                  20 \nDirect                              30 \nRegister indirect      15 \nIndexed                  15 [4]\n CO2",
+        "topic": "Computer System Performance",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 33,
+        "question": "QB4 \nA h \u00b7 \u00b7 d ssume t at 5 clock cycles are required for memory reference, 1 clock cycle is require \nfor regiSter reference, 1 clock cycle is required for arithmetic computation and zero \nclock cycles when the operand is specified in the instruction itself. Determine the \naverage number of clock cycles required for operand fetch on this processor. \nft.j C;ta0K lj vCea .::-~o 'I-- 1 +- J-,-OY.. o -1-Jox ~ +\u00ad\nI )~ b + I~)(-;/-) I I rrO \n-=--(w +- 1 i;-o . .J- 8 b + 1 or-) f I cro :::- J 6,) \nConsider an 8-way set associative mapped cache. The size of the main memory is 1 GB \nand there are 10 bits in the tag. Compute the size of cache memory. \n\u00b7-rec:) j l t r;kJ,, e. \u00b7\\-\nf \\0 '.;}-. ~ ) \n'Ji() ~-\\-5 . \n~ .f.-<_) ) W i V\\ U-L h..t,, C: 2-}-\n~ \u00b7 ~I oG~ 1') = 2-0 t-3 \n:: 1d + 3 I- 2 'IL ==-\n1.:3 \n:::.-2 b~ =g MB \n_5 1U- dtr (c..L4.. \nConvert the Multiplicand M = (-1 )10 and Multiplier Q = (-112)10 represented as decimal \nnumbers, in 8-bit, signed, 2's complement binary numbers. Use Bit-pair multiplication \nmethods to multiply them. \nI I \\ I I I I I l-- ') \n/ OifJJ(j O(P O [-- 11 2-) \n_ , 0+/- 1 0 0~ 6r- _ 6-o () 1-'h_. e,1/1 CC C l,i j . \nL-,JL--JL--' \n-2 +-1 O \"O Et B,+ ~ ~\u00bc -\n- o O V \n0 cJ 0 0 (J tJ 0 iD () --0 0 D 0 D D 0 b 0 0 -\nI I I I I I I \n~ b 1 ) 1) I 0 \nV \nI \n0 0 0 0 \n0 b O O o 1 [11 2-J [4]\n CO3 [4]\n CO4",
+        "topic": "Computer System Performance",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 34,
+        "question": "Q C1 \nConsider byte addressable machine with 32-bit word size. An integer array of order m \u00d7 \nn is stored starting from memory location LIST in column major order (that is, the \nelements of array are stored column-wise at successive memory location starting from \nLIST).  Write an assembly code for computing the sum of integers of each row of the \narray and store these sums in the memory word locations at addresses SUM, SUM+4, \nSUM +8\u2026. (. i.e., m successive locations starting from SUM). Assume that values of m \nand n are stored at memory location M and N respectively.  \nAns \nMove M, R4                                                                                 \nMultiply #4, R4                                                       \nMove #LIST, R1                                                    \nMove #SUM, R3                                                    \nMove M, R10                                                         \nOUTER     Move N, R11                                           \nClear R2                                                                \nClear R0                                                                \nINNER      Add (R1, R2), R0                                     \nAdd R4, R2                                                            \nDecrement R11                                                      \nBranch>0 INNER                                                  \nMove R0, (R3)                                                       \nAdd #4, R3                                                                \nAdd #4, R1                                                             \nDecrement R10                                                      \n Branch>0 OUTER [5]\n CO2",
+        "topic": "Computer Architecture",
+        "exam_frequency": 1,
+        "importance": 1,
+        "recency_score": 3
+    },
+    {
+        "id": 35,
+        "question": "Q C2 \nCalculate gate delays required to produce C48 and S47 for the following 48-bit adders. \na) 48-bit ripple carry adder. \nb) 48-bit adder by cascading 4-bit CLA (Carry Look Ahead) adders. Here, 4-bit CLA \nare developed using first level Generate and Propagate functions. \nAns \na) For Carry C48 = 2 * 48 = 96 gate delays (GD) \n         For Sum S47 = 95 GD \nb) For Carry C48 = 3 + 11 * 2 = 25 GD \n         For Sum S47 = 26 GD [3]\n CO4",
         "topic": "Computer Architecture",
         "exam_frequency": 1,
         "importance": 1,
