@@ -3,6 +3,7 @@ import re
 import json
 
 def load_data(filename="parsed_questions.json"):
+    """Loads parsed question database."""
     try:
         with open(filename, "r", encoding="utf-8") as file:
             return json.load(file)
@@ -10,64 +11,50 @@ def load_data(filename="parsed_questions.json"):
         return []
 
 def clean_question_text(text):
-    """Strips leading question numbers like Q1:, 1., or Q4: for true matching."""
-    return re.sub(r"^(?:Q)?\d+[\.\:\)]\s*", "", text, flags=re.IGNORECASE).strip()
-
-def calculate_score(imp, freq, recency=3):
-    """Calculates priority score based on frequency, importance, and recency."""
-    return round((imp * 0.4) + (freq * 0.4) + (recency * 0.2), 1)
+    """Strips leading question numbers and section headers for clean text matching."""
+    if not text:
+        return ""
+    return re.sub(r"^(?:Q\s*)?[A-C]?\d+[\.\:\)]?\s*", "", text, flags=re.IGNORECASE).strip()
 
 def export_prediction_report():
-    """Generates a formatted prediction report and exports it to a TXT or MD file."""
+    """Generates a topic frequency summary report and exports it to .txt or .md."""
     questions = load_data()
     if not questions:
-        print("\n[!] No questions available to export. Parse data first.")
+        print("\n[!] No questions available to export. Parse data first using Option 1.")
         return
 
     filter_topic = input("\nEnter topic to export (or press Enter for ALL topics): ").strip()
     
     if filter_topic:
-        filtered = [q for q in questions if filter_topic.lower() in q.get("topic", "").lower()]
+        target_questions = [q for q in questions if filter_topic.lower() in q.get("topic", "").lower()]
     else:
-        filtered = questions
+        target_questions = questions
 
-    if not filtered:
+    if not target_questions:
         print(f"\n[!] No questions found for topic '{filter_topic}'.")
         return
 
-    # Deduplicate questions
-    unique_questions = {}
-    for q in filtered:
-        core_text = clean_question_text(q["question"])
-        if core_text not in unique_questions:
-            unique_questions[core_text] = {
-                "question": core_text,
-                "topic": q.get("topic", "General"),
-                "count": 1,
-                "recency": q.get("recency_score", 3)
-            }
-        else:
-            unique_questions[core_text]["count"] += 1
+    # Aggregate topic statistics
+    topic_summary = {}
+    for q in target_questions:
+        topic = q.get("topic", "General")
+        q_text = clean_question_text(q.get("question", ""))
+        freq = q.get("exam_frequency", 1)
 
-    # Score and rank
-    ranked = []
-    for q_data in unique_questions.values():
-        freq = q_data["count"]
-        imp = min(5, freq)
-        score = calculate_score(imp, freq, q_data["recency"])
+        if topic not in topic_summary:
+            topic_summary[topic] = {"total_occurrences": 0, "questions": {}}
+
+        topic_summary[topic]["total_occurrences"] += freq
         
-        ranked.append({
-            "question": q_data["question"],
-            "topic": q_data["topic"],
-            "importance": imp,
-            "frequency": freq,
-            "recency": q_data["recency"],
-            "score": score
-        })
+        if q_text not in topic_summary[topic]["questions"]:
+            topic_summary[topic]["questions"][q_text] = {"display_text": q.get("question", ""), "count": freq}
+        else:
+            topic_summary[topic]["questions"][q_text]["count"] += freq
 
-    ranked.sort(key=lambda x: x["score"], reverse=True)
+    total_exam_questions = sum(t["total_occurrences"] for t in topic_summary.values())
+    sorted_topics = sorted(topic_summary.items(), key=lambda item: item[1]["total_occurrences"], reverse=True)
 
-    # File format selection
+    # Export format selection
     print("\nSelect export format:")
     print("1. Text File (.txt)")
     print("2. Markdown File (.md)")
@@ -75,38 +62,47 @@ def export_prediction_report():
     ext = ".md" if fmt_choice == "2" else ".txt"
 
     topic_label = filter_topic.replace(" ", "_").lower() if filter_topic else "all_topics"
-    default_filename = f"prediction_report_{topic_label}{ext}"
-    filename = input(f"Enter output filename [default: {default_filename}]: ").strip()
-    if not filename:
-        filename = default_filename
+    default_filename = f"topic_report_{topic_label}{ext}"
+    filename = input(f"Enter output filename [default: {default_filename}]: ").strip() or default_filename
 
-    # Build report content
-    header_title = f"EXAM PREDICTION REPORT: '{filter_topic.upper() if filter_topic else 'ALL TOPICS'}'"
     lines = []
+    report_title = f"EXAM TOPIC FREQUENCY REPORT: '{filter_topic.upper() if filter_topic else 'ALL TOPICS'}'"
 
     if ext == ".md":
-        lines.append(f"# {header_title}\n")
-        lines.append(f"**Total High-Probability Questions:** {len(ranked)}\n")
-        lines.append("---\n")
-        for idx, q in enumerate(ranked, 1):
-            lines.append(f"### {idx}. {q['question']}")
-            lines.append(f"- **Topic:** {q['topic']}")
-            lines.append(f"- **Prediction Score:** {q['score']} / 10.0")
-            lines.append(f"- **Stats:** Frequency={q['frequency']} | Importance={q['importance']} | Recency={q['recency']}\n")
+        lines.append(f"# {report_title}\n")
+        lines.append(f"**Total Questions Analyzed:** {total_exam_questions}\n")
+        lines.append("| Topic Name | Unique Questions | Weightage (%) |")
+        lines.append("| :--- | :---: | :---: |")
+        for topic, data in sorted_topics:
+            weightage = (data["total_occurrences"] / total_exam_questions * 100) if total_exam_questions > 0 else 0
+            lines.append(f"| {topic} | {data['total_occurrences']} | {weightage:.1f}% |")
+        lines.append("\n## Detailed Question Breakdown\n")
+        for topic, data in sorted_topics:
+            lines.append(f"### {topic} ({data['total_occurrences']} Qs)")
+            for q_data in data["questions"].values():
+                lines.append(f"- **[Asked {q_data['count']}x]:** {q_data['display_text']}")
+            lines.append("")
     else:
-        lines.append("=" * 60)
-        lines.append(f"      {header_title}")
-        lines.append("=" * 60 + "\n")
-        lines.append(f"Total High-Probability Questions: {len(ranked)}\n")
-        for idx, q in enumerate(ranked, 1):
-            lines.append(f"#{idx} [Score: {q['score']}/10.0] | Topic: {q['topic']}")
-            lines.append(f"   Question: {q['question']}")
-            lines.append(f"   Breakdown: Imp={q['importance']} | Freq={q['frequency']} | Recency={q['recency']}\n")
+        lines.append("=" * 65)
+        lines.append(f"      {report_title}")
+        lines.append("=" * 65)
+        lines.append(f"{'Topic Name':<35} | {'Questions':<10} | {'Weightage':<10}")
+        lines.append("-" * 65)
+        for topic, data in sorted_topics:
+            weightage = (data["total_occurrences"] / total_exam_questions * 100) if total_exam_questions > 0 else 0
+            lines.append(f"{topic[:34]:<35} | {data['total_occurrences']:<10} | {weightage:>8.1f}%")
+        lines.append("=" * 65)
+        lines.append(f"Total Questions Analyzed: {total_exam_questions}\n")
+        lines.append("\n--- DETAILED QUESTION BREAKDOWN ---")
+        for topic, data in sorted_topics:
+            lines.append(f"\nTOPIC: {topic.upper()} ({data['total_occurrences']} Qs)")
+            for q_idx, q_data in enumerate(data["questions"].values(), 1):
+                lines.append(f"  {q_idx}. [Asked {q_data['count']}x] {q_data['display_text']}")
 
     try:
         with open(filename, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
-        print(f"\n[+] Success! Report saved to '{filename}'.")
+        print(f"\n[+] Success! Report exported to '{filename}'.")
     except IOError as e:
         print(f"\n[!] Error saving report: {e}")
 
