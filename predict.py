@@ -2,6 +2,7 @@ import re
 import json
 
 def load_data(filename="parsed_questions.json"):
+    """Loads extracted question database."""
     try:
         with open(filename, "r", encoding="utf-8") as file:
             return json.load(file)
@@ -9,19 +10,20 @@ def load_data(filename="parsed_questions.json"):
         return []
 
 def clean_question_text(text):
-    """Strips leading question prefixes like Q1:, A1, Q A1, or C2 for deduplication."""
+    """Strips question prefixes (Q1:, A1., Q A1) for topic-level deduplication."""
+    if not text:
+        return ""
     return re.sub(r"^(?:Q\s*)?[A-C]?\d+[\.\:\)]?\s*", "", text, flags=re.IGNORECASE).strip()
 
 def run_predictor():
     """Aggregates and displays topic frequencies across all past exam papers."""
     questions = load_data()
     if not questions:
-        print("\n[!] No questions available to analyze. Parse data first.")
+        print("\n[!] No questions available to analyze. Parse data first using Option 1.")
         return
 
     filter_topic = input("\nEnter topic to inspect (or press Enter for ALL topics): ").strip()
 
-    # Apply filter if user specified a topic
     if filter_topic:
         target_questions = [q for q in questions if filter_topic.lower() in q.get("topic", "").lower()]
     else:
@@ -31,7 +33,6 @@ def run_predictor():
         print(f"\n[!] No questions found for topic '{filter_topic}'.")
         return
 
-    # Aggregate question counts and occurrences per topic
     topic_summary = {}
 
     for q in target_questions:
@@ -47,7 +48,6 @@ def run_predictor():
 
         topic_summary[topic]["total_occurrences"] += freq
         
-        # Deduplicate question entries within the topic
         if q_text not in topic_summary[topic]["questions"]:
             topic_summary[topic]["questions"][q_text] = {
                 "display_text": q.get("question", ""),
@@ -58,7 +58,6 @@ def run_predictor():
 
     total_exam_questions = sum(t["total_occurrences"] for t in topic_summary.values())
 
-    # Sort topics by total occurrence frequency descending
     sorted_topics = sorted(
         topic_summary.items(),
         key=lambda item: item[1]["total_occurrences"],
@@ -79,7 +78,6 @@ def run_predictor():
     print(f"Total Questions Analyzed: {total_exam_questions}")
     print("="*65)
 
-    # Detailed breakdown per topic
     show_details = input("\nDo you want to see the questions under each topic? (y/N): ").strip().lower()
     if show_details == 'y':
         for idx, (topic, data) in enumerate(sorted_topics, 1):

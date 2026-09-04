@@ -248,53 +248,5 @@ def run_parser(output_file="parsed_questions.json"):
     except IOError as e:
         print(f"\n[!] Error saving JSON file: {e}")
 
-def update_metadata():
-    """Allows user to update metadata for a question."""
-    try:
-        with open("parsed_questions.json", "r", encoding="utf-8") as file:
-            questions = json.load(file)
-    except (FileNotFoundError, json.JSONDecodeError):
-        print("\n[!] Error loading database. Parse raw text first.")
-        return
-
-    if not questions:
-        print("\n[!] No questions found in database.")
-        return
-
-    print("\n--- AVAILABLE QUESTIONS ---")
-    for q in questions:
-        print(f"ID {q['id']}: {q['question'][:80]}... [{q.get('topic', 'General')}]")
-
-    q_id_input = input("\nEnter Question ID to edit (or press Enter to cancel): ").strip()
-    if not q_id_input.isdigit():
-        print("Cancelled.")
-        return
-
-    q_id = int(q_id_input)
-    target_q = next((q for q in questions if q["id"] == q_id), None)
-
-    if not target_q:
-        print(f"[!] Question with ID {q_id} not found.")
-        return
-
-    print(f"\nEditing Question #{q_id}: '{target_q['question'][:100]}...'")
-    
-    new_topic = input(f"Enter Topic [{target_q.get('topic', 'General')}]: ").strip()
-    if new_topic:
-        target_q["topic"] = new_topic
-
-    for key in ["importance", "exam_frequency", "recency_score"]:
-        current_val = target_q.get(key, 3)
-        val_input = input(f"Enter {key.replace('_', ' ').title()} (1-5) [{current_val}]: ").strip()
-        if val_input.isdigit() and 1 <= int(val_input) <= 5:
-            target_q[key] = int(val_input)
-
-    try:
-        with open("parsed_questions.json", "w", encoding="utf-8") as file:
-            json.dump(questions, file, indent=4)
-        print(f"\n[+] Success! Saved metadata updates for Question #{q_id}.")
-    except IOError as e:
-        print(f"\n[!] Error saving updates: {e}")
-
 if __name__ == "__main__":
     run_parser()
