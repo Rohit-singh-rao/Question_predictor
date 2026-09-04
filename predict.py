@@ -12,76 +12,82 @@ def clean_question_text(text):
     """Strips leading question prefixes like Q1:, A1, Q A1, or C2 for deduplication."""
     return re.sub(r"^(?:Q\s*)?[A-C]?\d+[\.\:\)]?\s*", "", text, flags=re.IGNORECASE).strip()
 
-def calculate_score(imp, freq, recency=3):
-    """Calculates priority score based on frequency, importance, and recency."""
-    return round((imp * 0.4) + (freq * 0.4) + (recency * 0.2), 1)
-
 def run_predictor():
-    """Ranks and displays unique question predictions based on consolidated frequency."""
+    """Aggregates and displays topic frequencies across all past exam papers."""
     questions = load_data()
     if not questions:
-        print("\n[!] No questions available to predict. Parse data first.")
+        print("\n[!] No questions available to analyze. Parse data first.")
         return
 
-    filter_topic = input("\nEnter topic to predict (or press Enter for ALL topics): ").strip()
-    
-    if filter_topic:
-        filtered_questions = [q for q in questions if filter_topic.lower() in q.get("topic", "").lower()]
-    else:
-        filtered_questions = questions
+    filter_topic = input("\nEnter topic to inspect (or press Enter for ALL topics): ").strip()
 
-    if not filtered_questions:
+    # Apply filter if user specified a topic
+    if filter_topic:
+        target_questions = [q for q in questions if filter_topic.lower() in q.get("topic", "").lower()]
+    else:
+        target_questions = questions
+
+    if not target_questions:
         print(f"\n[!] No questions found for topic '{filter_topic}'.")
         return
 
-    # Group duplicate questions by stripping question prefixes while retaining full text for display
-    unique_questions = {}
-    for q in filtered_questions:
-        core_text = clean_question_text(q["question"])
-        if core_text not in unique_questions:
-            unique_questions[core_text] = {
-                "display_question": q["question"],
-                "topic": q.get("topic", "General"),
-                "count": 1,
-                "recency": q.get("recency_score", 3)
+    # Aggregate question counts and occurrences per topic
+    topic_summary = {}
+
+    for q in target_questions:
+        topic = q.get("topic", "General")
+        q_text = clean_question_text(q.get("question", ""))
+        freq = q.get("exam_frequency", 1)
+
+        if topic not in topic_summary:
+            topic_summary[topic] = {
+                "total_occurrences": 0,
+                "questions": {}
+            }
+
+        topic_summary[topic]["total_occurrences"] += freq
+        
+        # Deduplicate question entries within the topic
+        if q_text not in topic_summary[topic]["questions"]:
+            topic_summary[topic]["questions"][q_text] = {
+                "display_text": q.get("question", ""),
+                "count": freq
             }
         else:
-            unique_questions[core_text]["count"] += 1
+            topic_summary[topic]["questions"][q_text]["count"] += freq
 
-    # Calculate real frequency & score for ranked output
-    ranked = []
-    for q_data in unique_questions.values():
-        freq = q_data["count"]
-        imp = min(5, freq)  # Importance scales directly with frequency
-        score = calculate_score(imp, freq, q_data["recency"])
-        
-        ranked.append({
-            "question": q_data["display_question"],
-            "topic": q_data["topic"],
-            "importance": imp,
-            "frequency": freq,
-            "recency": q_data["recency"],
-            "score": score
-        })
+    total_exam_questions = sum(t["total_occurrences"] for t in topic_summary.values())
 
-    ranked.sort(key=lambda x: x["score"], reverse=True)
+    # Sort topics by total occurrence frequency descending
+    sorted_topics = sorted(
+        topic_summary.items(),
+        key=lambda item: item[1]["total_occurrences"],
+        reverse=True
+    )
 
-    total_avail = len(ranked)
-    print("\n" + "="*50)
-    print(f"      EXAM PREDICTION REPORT: '{filter_topic.upper() if filter_topic else 'ALL'}'")
-    print("="*50)
+    print("\n" + "="*65)
+    print("      PAST EXAM PAPERS: TOPIC FREQUENCY ANALYSIS      ")
+    print("="*65)
+    print(f"{'Topic Name':<35} | {'Questions':<10} | {'Weightage':<10}")
+    print("-" * 65)
 
-    top_n_input = input(f"\nHow many top predictions do you want to view? (1-{total_avail}) [default: ALL ({total_avail})]: ").strip()
+    for topic, data in sorted_topics:
+        weightage = (data["total_occurrences"] / total_exam_questions * 100) if total_exam_questions > 0 else 0
+        print(f"{topic[:34]:<35} | {data['total_occurrences']:<10} | {weightage:>8.1f}%")
 
-    if top_n_input.isdigit() and int(top_n_input) > 0:
-        limit = min(int(top_n_input), total_avail)
-    else:
-        limit = total_avail  # Shows ALL questions if Enter is pressed
+    print("="*65)
+    print(f"Total Questions Analyzed: {total_exam_questions}")
+    print("="*65)
 
-    for idx, q in enumerate(ranked[:limit], 1):
-        print(f"\n#{idx} [Score: {q['score']}/10.0] | Topic: {q['topic']}")
-        print(f"   Question: {q['question']}")
-        print(f"   Breakdown: Imp={q['importance']} | Freq={q['frequency']} | Recency={q['recency']}")
+    # Detailed breakdown per topic
+    show_details = input("\nDo you want to see the questions under each topic? (y/N): ").strip().lower()
+    if show_details == 'y':
+        for idx, (topic, data) in enumerate(sorted_topics, 1):
+            print(f"\n\n[{idx}] TOPIC: {topic.upper()} ({data['total_occurrences']} question(s) asked)")
+            print("-" * 60)
+            for q_idx, q_data in enumerate(data["questions"].values(), 1):
+                print(f"  {q_idx}. [Asked {q_data['count']} time(s)]")
+                print(f"     {q_data['display_text'][:150]}...\n")
 
 if __name__ == "__main__":
     run_predictor()

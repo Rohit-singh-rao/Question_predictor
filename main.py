@@ -68,13 +68,13 @@ def gather_source_files(user_input):
 
 def generate_global_taxonomy(questions_list):
     """PASS 1: Analyzes sample questions to generate a dynamic taxonomy."""
-    sample_text = "\n".join([f"- {q[:150]}" for q in questions_list[:12]])
+    sample_text = "\n".join([f"- {q[:150]}" for q in questions_list[:10]])
     
     prompt = (
         "You are an expert academic curriculum parser. Read these sample questions from an exam paper:\n"
         f"{sample_text}\n\n"
         "Generate a dynamic list of 5 to 8 concise, high-level subject topics that represent this exam paper. "
-        "Return ONLY a valid JSON object with NO markdown formatting or conversational text:\n"
+        "Return ONLY a valid JSON object with NO markdown formatting, ticks, or text outside the JSON:\n"
         '{"topics": ["Topic 1", "Topic 2", "Topic 3"]}'
     )
 
@@ -97,17 +97,68 @@ def generate_global_taxonomy(questions_list):
         
     return ["General Concepts"]
 
-def batch_classify_topics(questions_list, taxonomy):
-    """PASS 2: Maps each question ID to a topic using clean dictionary JSON."""
-    formatted_q = "\n".join([f"Q{idx + 1}: {q[:180]}" for idx, q in enumerate(questions_list)])
-    topics_str = ", ".join([f"'{t}'" for t in taxonomy])
+def generate_ai_topic(question_text, taxonomy_list):
+    """Maps an individual question strictly to one of the dynamic global topics."""
+    topics_str = ", ".join([f"'{t}'" for t in taxonomy_list])
+    
+    prompt = (
+        f"Examine this exam question: '{question_text[:250]}'.\n"
+        f"Classify this question strictly into ONE of the following topics: [{topics_str}]. "
+        "Select the single best matching topic. "
+        "Return ONLY a valid JSON object with NO markdown or extra text:\n"
+        '{"topic": "Selected Topic Name"}'
+    )
+
+    try:
+        response = ollama.chat(
+            model='llama3.2',
+            messages=[{'role': 'user', 'content': prompt}]
+        )
+
+        raw_text = response['message']['content'].strip()
+        json_match = re.search(r"\{.*?\}", raw_text, re.DOTALL)
+        
+        if json_match:
+            data = json.loads(json_match.group(0))
+            return data.get("topic", taxonomy_list[0])
+        else:
+            return taxonomy_list[0]
+
+    except Exception:
+        return taxonomy_list[0]
+
+def should_check_llm(q1_text, q2_text, threshold=0.12):
+    """Calculates term overlap to skip LLM calls on completely unrelated questions."""
+    words1 = set(re.findall(r'\w+', q1_text.lower()))
+    words2 = set(re.findall(r'\w+', q2_text.lower()))
+    if not words1 or not words2:
+        return False
+    
+    stop_words = {"what", "is", "the", "a", "an", "and", "or", "of", "to", "in", "for", "with", "explain", "describe", "define", "show", "write"}
+    w1 = words1 - stop_words
+    w2 = words2 - stop_words
+    
+    if not w1 or not w2:
+        return False
+        
+    intersection = w1.intersection(w2)
+    union = w1.union(w2)
+    overlap = len(intersection) / len(union)
+    
+    return overlap >= threshold
+
+def are_questions_equivalent(q1_text, q2_text):
+    """Uses local Llama 3 to check if two candidate questions mean the same thing."""
+    if not should_check_llm(q1_text, q2_text):
+        return False
 
     prompt = (
-        f"Available topics: [{topics_str}]\n\n"
-        f"Examine these exam questions:\n{formatted_q}\n\n"
-        "Classify EACH question into the single best matching topic from the available topics list.\n"
-        "Return ONLY a valid JSON dictionary mapping string Question IDs to Topic Names with NO markdown:\n"
-        '{"1": "Topic Name", "2": "Topic Name"}'
+        f"Question 1: '{q1_text[:200]}'\n"
+        f"Question 2: '{q2_text[:200]}'\n"
+        "Do these two questions ask for the exact same core concept or answer? "
+        "(e.g., 'What is Python?' and 'Define Python' are equivalent, or math problems testing the same formula).\n"
+        "Return ONLY a valid JSON object with NO extra text or markdown:\n"
+        '{"is_duplicate": true}'
     )
 
     try:
@@ -118,32 +169,14 @@ def batch_classify_topics(questions_list, taxonomy):
         raw_text = response['message']['content'].strip()
         json_match = re.search(r"\{.*?\}", raw_text, re.DOTALL)
         if json_match:
-            return json.loads(json_match.group(0))
-    except Exception as e:
-        print(f"\n[!] Warning: Batch topic classification fell back. ({e})")
-
-    return {}
-
-def calculate_word_overlap(q1_text, q2_text):
-    """Calculates term overlap between two questions to identify duplicate concepts."""
-    words1 = set(re.findall(r'\w+', q1_text.lower()))
-    words2 = set(re.findall(r'\w+', q2_text.lower()))
-    if not words1 or not words2:
-        return 0.0
-    
-    stop_words = {"what", "is", "the", "a", "an", "and", "or", "of", "to", "in", "for", "with", "explain", "describe", "define", "show", "write"}
-    w1 = words1 - stop_words
-    w2 = words2 - stop_words
-    
-    if not w1 or not w2:
-        return 0.0
-        
-    intersection = w1.intersection(w2)
-    union = w1.union(w2)
-    return len(intersection) / len(union)
+            data = json.loads(json_match.group(0))
+            return data.get("is_duplicate", False)
+    except Exception:
+        return False
+    return False
 
 def run_parser(output_file="parsed_questions.json"):
-    """Parses questions with 2-Pass Batch AI Strategy and fast in-memory deduplication."""
+    """Parses questions across multiple files/folders with live progress tracking."""
     user_input = input("\nEnter file(s) or folder path(s) to parse [comma-separated, default: sample_questions.txt]: ").strip()
     user_input = user_input if user_input else "sample_questions.txt"
 
@@ -171,44 +204,42 @@ def run_parser(output_file="parsed_questions.json"):
 
     total_q = len(all_raw_questions)
     
-    # PASS 1: Dynamic Taxonomy
-    print(f"\n[...] PASS 1/2: Extracting dynamic subject taxonomy...")
+    # PASS 1: Extract global dynamic taxonomy
+    print(f"\n[...] PASS 1: Generating dynamic topic taxonomy across all input papers...")
     dynamic_taxonomy = generate_global_taxonomy(all_raw_questions)
     print(f"[+] PASS 1 Complete! Identified {len(dynamic_taxonomy)} core topics:")
     for t in dynamic_taxonomy:
         print(f"    - {t}")
 
-    # PASS 2: Batch Classification
-    print(f"\n[...] PASS 2/2: Mapping topics for {total_q} questions...")
-    topic_map = batch_classify_topics(all_raw_questions, dynamic_taxonomy)
+    # PASS 2: Progressive Deduplication & Topic Classification
+    print(f"\n[...] PASS 2: Classifying and semantically deduplicating {total_q} question(s)...")
 
-    # Fast In-Memory Semantic Deduplication
     master_questions = []
 
     for idx, q_text in enumerate(all_raw_questions, 1):
-        assigned_topic = topic_map.get(str(idx), dynamic_taxonomy[0])
+        print(f" -> [{idx}/{total_q}] Processing question...", end="\r", flush=True)
         
-        # Check against existing master questions for high term overlap
         duplicate_found = False
+        
         for master in master_questions:
-            overlap = calculate_word_overlap(q_text, master["question"])
-            if overlap >= 0.45:  # High similarity threshold for duplicate matching
+            if are_questions_equivalent(q_text, master["question"]):
                 master["exam_frequency"] += 1
                 master["importance"] = min(5, master["exam_frequency"])
                 duplicate_found = True
                 break
 
         if not duplicate_found:
+            topic = generate_ai_topic(q_text, dynamic_taxonomy)
             master_questions.append({
                 "id": len(master_questions) + 1,
                 "question": q_text,
-                "topic": assigned_topic,
+                "topic": topic,
                 "exam_frequency": 1,
                 "importance": 1,
                 "recency_score": 3
             })
 
-    print(f"\n[+] Processing complete! Deduplicated {total_q} raw questions into {len(master_questions)} unique entries across topics.")
+    print(f"\n[+] AI processing complete! Deduplicated {total_q} raw question(s) into {len(master_questions)} unique entries.")
 
     try:
         with open(output_file, "w", encoding="utf-8") as file:
