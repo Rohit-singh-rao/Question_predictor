@@ -6,55 +6,58 @@ from pypdf import PdfReader
 
 def extract_text_from_file(filepath):
     """Reads raw text from .txt or .pdf files."""
+    print(f"\n[...] Reading file: {filepath}")
+    text = ""
     if filepath.lower().endswith(".pdf"):
-        reader = PdfReader(filepath)
-        text = ""
-        for page in reader.pages:
-            extracted = page.extract_text()
-            if extracted:
-                text += extracted + "\n"
-        return text
+        try:
+            reader = PdfReader(filepath)
+            for idx, page in enumerate(reader.pages):
+                extracted = page.extract_text()
+                if extracted:
+                    text += extracted + "\n"
+            print(f"[+] Extracted {len(text)} characters from PDF.")
+        except Exception as e:
+            print(f"[!] Error reading PDF '{filepath}': {e}")
     else:
-        with open(filepath, "r", encoding="utf-8") as file:
-            return file.read()
+        with open(filepath, "r", encoding="utf-8", errors="ignore") as file:
+            text = file.read()
+            print(f"[+] Extracted {len(text)} characters from TXT.")
+            
+    return text
 
 def clean_exam_headers(raw_text):
-    """Strips exam metadata, page headers, section banners, and solution labels."""
-    text = re.sub(r"(?i)Faculty of Engineering.*?(?=(?:Q\s*)?[A-C]\d+\b)", "", raw_text, flags=re.DOTALL)
+    """Strips common exam metadata and header noise."""
+    text = re.sub(r"(?i)Faculty of Engineering.*?(?=\b(?:Q|Question|\d+)\b)", "", raw_text, flags=re.DOTALL)
     text = re.sub(r"(?i)SECTION\s*[-–—]?\s*[A-Z]", "", text)
     text = re.sub(r"(?i)S\.No\.\s*Marks\s*CO\s*Q", "", text)
     return text
 
-def format_question_text(text):
-    """Adds clean line breaks and indentations to make raw PDF text human-readable."""
-    text = re.sub(r"\s+(LOAD|ADD|STORE|MUL|SUB|CMP|MOVE|BEQ|BLE|BR|HALT)\b", r"\n   \1", text)
-    text = re.sub(r"\s+(Step\s*\d+:)", r"\n\n   \1", text)
-    text = re.sub(r"\s+(\([a-z]\))", r"\n   \1", text)
-    text = re.sub(r"\s+(•|Explanation)", r"\n   \1", text)
-    text = re.sub(r"\s+(\[\d+\])", r" \1\n", text)
-    return text.strip()
-
 def split_into_questions(raw_text):
-    """Splits raw text strictly into main questions (Q A1..A5, Q B1..B5, Q C1..C2, Q D1..D2)."""
+    """
+    Splits text flexibly into questions.
+    Supports formats: Q1, Q A1, Question 1, 1., 1)
+    """
     cleaned_text = clean_exam_headers(raw_text)
-    pattern = r"(?=(?:^|\n)\s*(?:Q\s*)?[A-D]\d+[\.\:\)]?\s+)"
+    pattern = r"(?=(?:^|\n)\s*(?:Q\s*[A-D]?\d+|Question\s*\d+|\d+[\.\)]))"
     chunks = re.split(pattern, cleaned_text, flags=re.IGNORECASE)
     
     questions = []
     for chunk in chunks:
         cleaned = chunk.strip()
-        if len(cleaned) > 25 and re.match(r"(?i)^(?:Q\s*)?[A-D]\d+", cleaned):
-            if not re.match(r"(?i)^C\d+\s*=", cleaned):
-                formatted = format_question_text(cleaned)
-                questions.append(formatted)
+        if len(cleaned) > 15:
+            questions.append(cleaned)
             
+    print(f"[+] Identified {len(questions)} candidate question block(s).")
     return questions
 
 def gather_source_files(user_input):
     """Resolves user input into a list of valid file paths."""
-    paths = [p.strip() for p in user_input.split(",") if p.strip()]
+    if isinstance(user_input, list):
+        paths = user_input
+    else:
+        paths = [p.strip() for p in user_input.split(",") if p.strip()]
+        
     files_to_process = []
-
     for path in paths:
         if os.path.isdir(path):
             for root, _, files in os.walk(path):
@@ -156,7 +159,6 @@ def are_questions_equivalent(q1_text, q2_text):
         f"Question 1: '{q1_text[:200]}'\n"
         f"Question 2: '{q2_text[:200]}'\n"
         "Do these two questions ask for the exact same core concept or answer? "
-        "(e.g., 'What is Python?' and 'Define Python' are equivalent, or math problems testing the same formula).\n"
         "Return ONLY a valid JSON object with NO extra text or markdown:\n"
         '{"is_duplicate": true}'
     )
@@ -175,76 +177,81 @@ def are_questions_equivalent(q1_text, q2_text):
         return False
     return False
 
-def run_parser(output_file="parsed_questions.json"):
-    """Parses questions across multiple files/folders with live progress tracking."""
-    user_input = input("\nEnter file(s) or folder path(s) to parse [comma-separated, default: sample_questions.txt]: ").strip()
-    user_input = user_input if user_input else "sample_questions.txt"
+def run_parser(input_path=None, output_file="parsed_questions.json"):
+    """Parses questions across multiple files and appends/deduplicates into master database."""
+    if input_path is None:
+        user_input = input("\nEnter file(s) or folder path(s) to parse [comma-separated, default: sample_questions.txt]: ").strip()
+        user_input = user_input if user_input else "sample_questions.txt"
+    else:
+        user_input = input_path
 
     file_list = gather_source_files(user_input)
     if not file_list:
         print(f"\n[!] Error: No valid .pdf or .txt files found for '{user_input}'.")
         return
 
-    print(f"\n[+] Found {len(file_list)} file(s) to process:")
-    for f in file_list:
-        print(f"    - {f}")
+    print(f"\n[+] Processing {len(file_list)} file(s)...")
 
-    all_raw_questions = []
+    # Load existing questions if file exists
+    master_questions = []
+    if os.path.exists(output_file):
+        try:
+            with open(output_file, "r", encoding="utf-8") as f:
+                master_questions = json.load(f)
+            print(f"[+] Loaded {len(master_questions)} existing question(s) from database.")
+        except Exception:
+            master_questions = []
+
     for filepath in file_list:
         try:
             raw_text = extract_text_from_file(filepath)
             extracted = split_into_questions(raw_text)
-            all_raw_questions.extend(extracted)
+            if not extracted:
+                continue
+
+            source_filename = os.path.basename(filepath)
+            
+            # PASS 1: Extract global dynamic taxonomy per paper context
+            print(f"\n[...] PASS 1: Generating dynamic topic taxonomy for '{source_filename}'...")
+            dynamic_taxonomy = generate_global_taxonomy(extracted)
+            print(f"[+] Topics identified: {dynamic_taxonomy}")
+
+            # PASS 2: Progressive Deduplication against master database
+            total_q = len(extracted)
+            print(f"\n[...] PASS 2: Classifying and deduplicating {total_q} question(s) from '{source_filename}'...")
+
+            for idx, q_text in enumerate(extracted, 1):
+                print(f" -> [{idx}/{total_q}] Processing...", end="\r", flush=True)
+                
+                duplicate_found = False
+                
+                for master in master_questions:
+                    if are_questions_equivalent(q_text, master["question"]):
+                        master["exam_frequency"] += 1
+                        master["importance"] = min(5, master["exam_frequency"])
+                        duplicate_found = True
+                        break
+
+                if not duplicate_found:
+                    topic = generate_ai_topic(q_text, dynamic_taxonomy)
+                    master_questions.append({
+                        "id": len(master_questions) + 1,
+                        "question": q_text,
+                        "topic": topic,
+                        "exam_frequency": 1,
+                        "importance": 1,
+                        "recency_score": 3,
+                        "source_file": source_filename
+                    })
         except Exception as e:
             print(f"[!] Error processing '{filepath}': {e}")
 
-    if not all_raw_questions:
-        print("\n[!] Warning: No formatted questions extracted.")
-        return
-
-    total_q = len(all_raw_questions)
-    
-    # PASS 1: Extract global dynamic taxonomy
-    print(f"\n[...] PASS 1: Generating dynamic topic taxonomy across all input papers...")
-    dynamic_taxonomy = generate_global_taxonomy(all_raw_questions)
-    print(f"[+] PASS 1 Complete! Identified {len(dynamic_taxonomy)} core topics:")
-    for t in dynamic_taxonomy:
-        print(f"    - {t}")
-
-    # PASS 2: Progressive Deduplication & Topic Classification
-    print(f"\n[...] PASS 2: Classifying and semantically deduplicating {total_q} question(s)...")
-
-    master_questions = []
-
-    for idx, q_text in enumerate(all_raw_questions, 1):
-        print(f" -> [{idx}/{total_q}] Processing question...", end="\r", flush=True)
-        
-        duplicate_found = False
-        
-        for master in master_questions:
-            if are_questions_equivalent(q_text, master["question"]):
-                master["exam_frequency"] += 1
-                master["importance"] = min(5, master["exam_frequency"])
-                duplicate_found = True
-                break
-
-        if not duplicate_found:
-            topic = generate_ai_topic(q_text, dynamic_taxonomy)
-            master_questions.append({
-                "id": len(master_questions) + 1,
-                "question": q_text,
-                "topic": topic,
-                "exam_frequency": 1,
-                "importance": 1,
-                "recency_score": 3
-            })
-
-    print(f"\n[+] AI processing complete! Deduplicated {total_q} raw question(s) into {len(master_questions)} unique entries.")
+    print(f"\n[+] AI processing complete! Database now holds {len(master_questions)} unique entries.")
 
     try:
         with open(output_file, "w", encoding="utf-8") as file:
             json.dump(master_questions, file, indent=4)
-        print(f"[+] Success! Saved database into '{output_file}'.")
+        print(f"[+] Saved updated database to '{output_file}'.")
     except IOError as e:
         print(f"\n[!] Error saving JSON file: {e}")
 

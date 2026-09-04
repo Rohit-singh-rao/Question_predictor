@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Exam Paper - Question Predictor</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">🎓 Exam Question Predictor</a>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width: 700px;">
+        
+        <!-- Flash Alert Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- Main Upload Form Card -->
+        <div class="card shadow border-0 mb-4">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="card-title mb-0 fw-bold">Step 1: Upload Exam Question Papers</h5>
+            </div>
+            <div class="card-body p-4">
+                <p class="text-secondary mb-4">Select all your PDF or TXT exam papers together to parse questions, calculate topic weights, and build predictions in one batch.</p>
+                
+                <form action="/upload" method="POST" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="fileInput" class="form-label fw-semibold">Select File(s) (.pdf, .txt)</label>
+                        <input class="form-control form-control-lg" type="file" id="fileInput" name="file" accept=".pdf,.txt" multiple required>
+                        <div class="form-text text-muted">Tip: Hold <code>Ctrl</code> or <code>Shift</code> in the file window to select multiple files at once.</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mt-2">Upload & Parse Paper(s)</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Database Status & Reset Card -->
+        <div class="card shadow-sm border-0 mb-5">
+            <div class="card-body d-flex align-items-center justify-content-between py-3">
+                <div>
+                    <span class="fw-semibold">Current Database Status:</span>
+                    {% if has_data %}
+                        <span class="badge bg-success ms-2">{{ question_count }} Questions Ready</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark ms-2">No Parsed Data</span>
+                    {% endif %}
+                </div>
+                
+                <div class="d-flex gap-2 align-items-center">
+                    {% if has_data %}
+                        <a href="/dashboard" class="btn btn-outline-primary btn-sm fw-semibold">Go to Dashboard &rarr;</a>
+                        <form action="/reset" method="POST" onsubmit="return confirm('Clear ALL parsed questions from database?');" class="d-inline">
+                            <button type="submit" class="btn btn-outline-danger btn-sm fw-semibold">⚠️ Reset Data</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

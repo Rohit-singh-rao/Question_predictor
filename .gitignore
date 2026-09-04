@@ -4,3 +4,9 @@ venv/
 # Python cache files
 __pycache__/
 *.pyc
+# Project generated files
+uploads/*
+!uploads/.gitkeep
+parsed_questions.json
+prediction_report.pdf
+.env
