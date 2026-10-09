@@ -26,63 +26,54 @@ def extract_text_from_file(filepath):
     return text
 
 def clean_exam_headers(raw_text):
-    """Strips common exam metadata, header blocks, and grade markers."""
-    text = re.sub(r"(?i)(Name|Roll\s*No|Reg\.?\s*No|Student\s*ID|Date|Time|Duration|Max\.?\s*Marks|Total\s*Marks)\s*[:\._\-].*", "", raw_text)
-    text = re.sub(r"(?i)(Class|Grade|Std)\s*[:\._\-]?\s*\d+.*", "", text)
-    text = re.sub(r"(?i)Faculty of.*|Department of.*|University.*|College of.*|School of.*", "", text)
+    """Strips common exam administrative noise."""
+    text = re.sub(r"(?i)Faculty of.*|Department of.*|University.*|College of.*|School of.*", "", raw_text)
     text = re.sub(r"(?i)(Mid|End)\s*Term\s*Examination.*|Academic\s*Year.*|Semester\s*[-–—]?\s*[I|V|X|0-9]+", "", text)
     text = re.sub(r"(?i)SECTION\s*[-–—]?\s*[A-Z]", "", text)
     text = re.sub(r"(?i)S\.No\.\s*Marks\s*CO\s*Q.*", "", text)
     text = re.sub(r"(?i)Instructions?\s*[:\.-].*", "", text)
     return text
 
-def is_valid_question(text):
-    """Strict Python filter to reject administrative fields, grades, and metadata."""
+def is_valid_question_prefix(text):
+    """
+    Strict structural match: Retains only blocks starting with valid question markers:
+    - Q, Q1, Q.1, Q1a, Question 1
+    - 1., 1), 1.1, 1(a)
+    - a), b., A.
+    - 1a., 1b), A1.
+    """
     cleaned = text.strip()
     
-    # Ignore short snippets
-    if len(cleaned) < 25:
+    # 1. Ignore short snippets (under 15 chars)
+    if len(cleaned) < 15:
         return False
-        
-    # Block specific header and administrative patterns
-    metadata_patterns = [
-        r"(?i)^roll\s*no",
-        r"(?i)^name\s*[:\._\-]",
-        r"(?i)^student\s*id",
-        r"(?i)^grade\s*\d+",
-        r"(?i)^class\s*\d+",
-        r"(?i)^time\s*allowed",
-        r"(?i)^max\.\?\s*marks",
-        r"(?i)^course\s*(code|name)",
-        r"(?i)^subject\s*(code|name)",
-        r"(?i)^paper\s*(code|id)",
-        r"(?i)^semester",
-        r"(?i)^page\s*\d+\s*of\s*\d+",
-        r"(?i)^all\s*questions\s*are\s*compulsory",
-        r"(?i)^attempt\s*any\s*\d+",
-        r"(?i)^note\s*:"
-    ]
-    
-    for pattern in metadata_patterns:
-        if re.search(pattern, cleaned):
+
+    # 2. Match structural question prefixes at the very start of the block
+    question_start_pattern = r"^(?:Q\s*[A-Z]?\d*|Question\s*\d+|\d+[\.\)]|\d+[a-z][\.\)]|\d+\([a-z]\)|[a-zA-Z][\.\)]|[a-zA-Z]\d+[\.\)])\b"
+
+    if not re.match(question_start_pattern, cleaned, flags=re.IGNORECASE):
+        return False
+
+    # 3. Guard against administrative lines even if prefixed unusually
+    header_junk = [r"(?i)^roll\s*no", r"(?i)^name\s*:", r"(?i)^date\s*:", r"(?i)^time\s*:", r"(?i)^marks\s*:"]
+    for junk in header_junk:
+        if re.search(junk, cleaned):
             return False
 
-    # Must contain question keywords OR a question mark / substantial length
-    has_question_keywords = bool(re.search(r"(?i)\b(what|why|how|explain|describe|define|calculate|derive|find|write|show|list|compare|differentiate|discuss|state|prove|solve|evaluate)\b", cleaned))
-    has_question_structure = "?" in cleaned or len(cleaned.split()) >= 6
-    
-    return has_question_keywords or has_question_structure
+    return True
 
 def split_into_questions(raw_text):
-    """Splits text on explicit question numbers while preserving text blocks."""
+    """Splits raw text and ONLY retains chunks starting with valid question markers."""
     cleaned_text = clean_exam_headers(raw_text)
-    pattern = r"(?=(?:^|\n)\s*(?:Q\s*[A-D]?\d+|Question\s*\d+|(?:Q\.\s*\d+)|(?:\d+[\.\)]\s+[A-Z])))"
+    
+    # Regex lookahead split for any valid question starting format
+    pattern = r"(?=(?:^|\n)\s*(?:Q\s*[A-Z]?\d*|Question\s*\d+|\d+[\.\)]|\d+[a-z][\.\)]|\d+\([a-z]\)|[a-zA-Z][\.\)]|[a-zA-Z]\d+[\.\)]))"
     chunks = re.split(pattern, cleaned_text, flags=re.IGNORECASE)
     
     questions = []
     for chunk in chunks:
         cleaned = chunk.strip()
-        if is_valid_question(cleaned):
+        if is_valid_question_prefix(cleaned):
             questions.append(cleaned)
             
     return questions
@@ -184,7 +175,7 @@ def classify_single_question(question_text, taxonomy_list):
     return taxonomy_list[len(question_text) % len(taxonomy_list)]
 
 def run_parser(input_path=None, output_file="parsed_questions.json"):
-    """Fast execution parser with strict metadata stripping and dynamic topic tagging."""
+    """Fast execution parser with strict structural prefix matching and dynamic topic tagging."""
     if input_path is None:
         user_input = input("\nEnter file(s) or folder path(s) to parse: ").strip()
     else:
